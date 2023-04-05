@@ -1,0 +1,45 @@
+## ENV
+# WEBSERVER_FQDN
+# JUPYTER_TOKEN
+
+version: '3.8'
+
+services:
+
+  jupyter:
+    image: jupyter/datascience-notebook
+    command: start-notebook.sh --NotebookApp.token=$JUPYTER_TOKEN --notebook-dir=/notebooks
+    volumes:
+      - notebooks:/notebooks
+    networks:
+      - default
+      - web
+    deploy:
+      mode: replicated
+      replicas: 1
+      #restart_policy:
+        #condition: on-failure
+        #max_attempts: 3
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+      placement:
+        constraints:
+          - node.role == worker
+      labels:
+        - traefik.enable=true
+        - traefik.port=8888
+        - traefik.default.frontend.rule=Host:${WEBSERVER_FQDN}
+        - traefik.protocol=http
+        - traefik.docker.network=web
+        - traefik.frontend.headers.customResponseHeaders=access-control-allow-origin:*
+        
+volumes:
+  notebooks:
+    driver: local
+
+networks:
+  web:
+    external: true
+    name: web
